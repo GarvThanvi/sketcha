@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Rectangle, Tool } from "../../types/canvas";
+import type { Rectangle, Circle, Square, Tool } from "../../types/canvas";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -14,7 +14,7 @@ export default function Canvas() {
 
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
 
-  const [currentRect, setCurrentRect] = useState<Rectangle | null>(null);
+  const [currentShape, setCurrentShape] = useState<Rectangle | Circle | Square | null>(null);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
@@ -47,7 +47,7 @@ export default function Canvas() {
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     const { x, y } = getMousePosition(e);
-    setCurrentRect({
+    setCurrentShape({
       id: crypto.randomUUID(),
       x: Math.min(startPoint.x, x),
       y: Math.min(startPoint.y, y),
@@ -58,11 +58,11 @@ export default function Canvas() {
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    if (currentRect) {
-      setShapes((prev) => [...prev, currentRect]);
+    if (currentShape) {
+      setShapes((prev) => [...prev, currentShape]);
     }
     setIsDrawing(false);
-    setCurrentRect(null);
+    setCurrentShape(null);
   };
 
   const draw = (ctx: CanvasRenderingContext2D) => {
@@ -74,15 +74,15 @@ export default function Canvas() {
       ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
     });
 
-    if (currentRect) {
+    if (currentShape) {
       ctx.strokeStyle = "#3b82f6";
       ctx.lineWidth = 2;
 
       ctx.strokeRect(
-        currentRect.x,
-        currentRect.y,
-        currentRect.width,
-        currentRect.height
+        currentShape.x,
+        currentShape.y,
+        currentShape.width,
+        currentShape.height
       );
     }
   };

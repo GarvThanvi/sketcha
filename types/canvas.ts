@@ -8,7 +8,7 @@ export interface Rectangle {
   height: number;
 }
 
-export interface Cirlce {
+export interface Circle {
   id: string;
   x: number;
   y: number;
