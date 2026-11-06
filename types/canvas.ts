@@ -1,4 +1,4 @@
-export type Tool = "selection" | "Rectangle";
+export type Tool = "selection" | "Rectangle" | "Circle" | "Square";
 
 export interface Rectangle {
   id: string;

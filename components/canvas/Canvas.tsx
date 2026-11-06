@@ -14,7 +14,7 @@ export default function Canvas() {
 
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
 
-  const [currentShape, setCurrentShape] = useState<Rectangle | Circle | Square | null>(null);
+  const [currentShape, setCurrentShape] = useState<Rectangle | null>(null);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
@@ -87,12 +87,15 @@ export default function Canvas() {
     }
   };
 
-  const canvas = canvasRef.current;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if(!canvas) return;
 
-  if (canvas) {
-    const ctx = canvas.getContext("2d");
-    if (ctx) draw(ctx);
-  }
+    const ctx = canvas.getContext('2d');
+    if(!ctx) return;
+
+    draw(ctx);
+  }, [shapes, currentShape])
 
   return (
     <canvas
