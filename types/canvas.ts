@@ -1,5 +1,7 @@
 export type Tool = "selection" | "Rectangle" | "Circle" | "Square";
 
+export type Shapes = Rectangle | Circle | Square;
+
 export interface Rectangle {
   id: string;
   x: number;
@@ -21,3 +23,8 @@ export interface Square {
   y: number;
   side: number;
 }
+
+export type Shape =
+  | ({ type: "Rectangle" } & Rectangle)
+  | ({ type: "Circle" } & Circle)
+  | ({ type: "Square" } & Square);
