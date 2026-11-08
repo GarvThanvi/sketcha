@@ -65,8 +65,6 @@ export default function Canvas() {
         height,
       });
     } else if (tool === "Square") {
-      // Side follows the larger drag dimension. When dragging up or left,
-      // shift the corner so the square stays attached to the cursor.
       const side = Math.max(width, height);
       setCurrentShape({
         type: "Square",
