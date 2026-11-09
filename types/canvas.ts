@@ -1,4 +1,4 @@
-export type Tool = "selection" | "Rectangle" | "Circle" | "Square";
+export type Tool = "selection" | "Rectangle" | "Circle" | "Square" | "Text";
 
 export type Shapes = Rectangle | Circle | Square;
 
@@ -24,7 +24,19 @@ export interface Square {
   side: number;
 }
 
+export interface TextShape {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  type: 'Text';
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+}
+
 export type Shape =
   | ({ type: "Rectangle" } & Rectangle)
   | ({ type: "Circle" } & Circle)
-  | ({ type: "Square" } & Square);
+  | ({ type: "Square" } & Square)
+  | TextShape;
