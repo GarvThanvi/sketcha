@@ -27,6 +27,12 @@ export default function Canvas() {
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+
+  const [action, setAction] = useState<"moving" | "resizing" | null>(null);
+
+  const [activeHandle, setActiveHandle] = useState<string | null>(null);
+
   useEffect(() => {
     if (isTyping) {
       textAreaRef.current?.focus();
@@ -106,6 +112,15 @@ export default function Canvas() {
         y: top + height / 2,
         radius,
       });
+    } else if (tool === "Line") {
+      setCurrentShape({
+        type: "Line",
+        id,
+        x1: startPoint.x,
+        y1: startPoint.y,
+        x2: x,
+        y2: y,
+      });
     }
   };
 
@@ -147,19 +162,106 @@ export default function Canvas() {
 
     const hasArea =
       currentShape !== null &&
-      (currentShape.type === "Circle"
-        ? currentShape.radius > 0
-        : currentShape.type === "Square"
-          ? currentShape.side > 0
-          : currentShape.type === "Rectangle"
-            ? currentShape.width > 0 && currentShape.height > 0
-            : false);
+      (currentShape.type === "Line"
+        ? currentShape.x1 !== currentShape.y1 ||
+          currentShape.x2 !== currentShape.y2
+        : currentShape.type === "Circle"
+          ? currentShape.radius > 0
+          : currentShape.type === "Square"
+            ? currentShape.side > 0
+            : currentShape.type === "Rectangle"
+              ? currentShape.width > 0 && currentShape.height > 0
+              : false);
 
     if (currentShape && hasArea) {
       setShapes((prev) => [...prev, currentShape]);
     }
     setIsDrawing(false);
     setCurrentShape(null);
+  };
+
+  const getShapeAtPosition = (x: number, y: number): Shape | null => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      const shape = shapes[i];
+
+      if (shape.type === "Rectangle") {
+        if (
+          x >= shape.x &&
+          x <= shape.x + shape.width &&
+          y >= shape.y &&
+          y <= shape.y + shape.height
+        ) {
+          return shape;
+        }
+      }
+
+      if (shape.type === "Square") {
+        if (
+          x >= shape.x &&
+          x <= shape.x + shape.side &&
+          y >= shape.y &&
+          y <= shape.side
+        ) {
+          return shape;
+        }
+      }
+
+      if (shape.type === "Circle") {
+        const distance = Math.hypot(x - shape.x, y - shape.y);
+
+        if (distance <= shape.radius) {
+          return shape;
+        }
+      }
+
+      if (shape.type === "Line") {
+        const { x1, y1, x2, y2 } = shape;
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+
+        const lengthSquared = dx * dx + dy * dy;
+
+        const t =
+          lengthSquared === 0
+            ? 0
+            : Math.max(
+                0,
+                Math.min(1, ((x - x1) * dx + (y - y1) * dy) / lengthSquared),
+              );
+
+        const closestX = x1 + t * dx;
+        const closestY = y1 + t * dy;
+
+        const distance = Math.hypot(x - closestX, y - closestY);
+
+        if (distance <= 6) return shape;
+      }
+
+      if (shape.type === "Text" && ctx) {
+        ctx.font = `${shape.fontSize}px ${shape.fontFamily}`;
+
+        const lines = shape.text.split("\n");
+        const width = Math.max(
+          ...lines.map((line) => ctx.measureText(line).width),
+        );
+
+        const height = lines.length * shape.fontSize * 2;
+
+        if (
+          x >= shape.x &&
+          x <= shape.x + width &&
+          y >= shape.y &&
+          y <= height
+        ) {
+          return shape;
+        }
+      }
+    }
+    return null;
   };
 
   const drawShape = (
@@ -187,6 +289,11 @@ export default function Canvas() {
       lines.forEach((line, index) => {
         ctx.fillText(line, shape.x, shape.y + index * shape.fontSize * 2);
       });
+    } else if (shape.type === "Line") {
+      ctx.beginPath();
+      ctx.moveTo(shape.x1, shape.y1);
+      ctx.lineTo(shape.x2, shape.y2);
+      ctx.stroke();
     }
   };
 

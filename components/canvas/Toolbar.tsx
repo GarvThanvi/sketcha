@@ -8,7 +8,7 @@ type ToolbarProps = {
   onSelectTool: (tool: Tool) => void;
 };
 
-const tools: Tool[] = ["Rectangle", "Circle", "Square", "Text"];
+const tools: Tool[] = ["Rectangle", "Circle", "Square", "Text", "Line"];
 
 const containerStyle: CSSProperties = {
   position: "fixed",
