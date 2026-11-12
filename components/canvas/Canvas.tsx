@@ -33,6 +33,12 @@ export default function Canvas() {
 
   const [activeHandle, setActiveHandle] = useState<string | null>(null);
 
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    originalShape: Shape;
+  } | null>(null);
+
   useEffect(() => {
     if (isTyping) {
       textAreaRef.current?.focus();
@@ -59,9 +65,25 @@ export default function Canvas() {
 
   //starts drawing
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (tool === "selection") return;
-
     const { x, y } = getMousePosition(e);
+
+    if (tool === "selection") {
+      const selected = getShapeAtPosition(x, y);
+
+      if (!selected) {
+        setSelectedShapeId(null);
+        dragRef.current = null;
+        return;
+      }
+
+      setSelectedShapeId(selected.id);
+
+      dragRef.current = {
+        startX: x,
+        startY: y,
+        originalShape: selected,
+      };
+    }
 
     if (tool == "Text") {
       setTextPosition({ x, y });
@@ -75,8 +97,26 @@ export default function Canvas() {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
     const { x, y } = getMousePosition(e);
+
+    if (tool === "selection" && dragRef.current) {
+      const { startX, startY, originalShape } = dragRef.current;
+
+      const dx = x - startX;
+      const dy = y - startY;
+
+      setShapes((prev) =>
+        prev.map((shape) =>
+          shape.id === originalShape.id
+            ? moveShape(originalShape, dx, dy)
+            : shape,
+        ),
+      );
+
+      return;
+    }
+
+    if (!isDrawing) return;
 
     const width = Math.abs(x - startPoint.x);
     const height = Math.abs(y - startPoint.y);
@@ -158,6 +198,12 @@ export default function Canvas() {
   };
 
   const handleMouseUp = () => {
+    if (tool === "selection") {
+      dragRef.current = null;
+
+      return;
+    }
+
     if (!isDrawing) return;
 
     const hasArea =
@@ -177,6 +223,7 @@ export default function Canvas() {
       setShapes((prev) => [...prev, currentShape]);
     }
     setIsDrawing(false);
+    setTool("selection");
     setCurrentShape(null);
   };
 
@@ -264,6 +311,24 @@ export default function Canvas() {
     return null;
   };
 
+  const moveShape = (shape: Shape, dx: number, dy: number): Shape => {
+    if (shape.type === "Line") {
+      return {
+        ...shape,
+        x1: shape.x1 + dx,
+        y1: shape.y1 + dy,
+        x2: shape.x2 + dx,
+        y2: shape.y2 + dy,
+      };
+    }
+
+    return {
+      ...shape,
+      x: shape.x + dx,
+      y: shape.y + dy,
+    };
+  };
+
   const drawShape = (
     ctx: CanvasRenderingContext2D,
     shape: Shape,
@@ -301,7 +366,8 @@ export default function Canvas() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     shapes.forEach((shape) => {
-      drawShape(ctx, shape, "#1e293b");
+      const isSelected = shape.id === selectedShapeId;
+      drawShape(ctx, shape, isSelected ? "#3b82f6" : "#1e293b");
     });
 
     if (currentShape) {
@@ -317,7 +383,29 @@ export default function Canvas() {
     if (!ctx) return;
 
     draw(ctx);
-  }, [shapes, currentShape, dimensions]);
+  }, [shapes, currentShape, dimensions, selectedShapeId]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedShapeId) return;
+
+      if (isTyping) return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        setShapes((prev) =>
+          prev.filter((shape) => shape.id !== selectedShapeId),
+        );
+      }
+      setSelectedShapeId(null);
+      dragRef.current = null;
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedShapeId, isTyping]);
 
   return (
     <>
