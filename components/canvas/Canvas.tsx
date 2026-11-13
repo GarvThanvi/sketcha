@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Shape, Tool } from "../../types/canvas";
+import type { Shape, TextShape, Tool } from "../../types/canvas";
 import Toolbar from "./Toolbar";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [tool, setTool] = useState<Tool>("Rectangle");
+  const [tool, setTool] = useState<Tool>("selection");
 
   const [shapes, setShapes] = useState<Shape[]>([]);
 
@@ -182,6 +182,7 @@ export default function Canvas() {
     }
     setIsTyping(false);
     setTextValue("");
+    setTool("selection");
   };
 
   const cancelText = () => {
@@ -250,7 +251,7 @@ export default function Canvas() {
           x >= shape.x &&
           x <= shape.x + shape.side &&
           y >= shape.y &&
-          y <= shape.side
+          y <= shape.y + shape.side
         ) {
           return shape;
         }
@@ -302,7 +303,7 @@ export default function Canvas() {
           x >= shape.x &&
           x <= shape.x + width &&
           y >= shape.y &&
-          y <= height
+          y <= shape.y + height
         ) {
           return shape;
         }
@@ -327,6 +328,27 @@ export default function Canvas() {
       x: shape.x + dx,
       y: shape.y + dy,
     };
+  };
+
+  const drawTextSelection = (
+    ctx: CanvasRenderingContext2D,
+    shape: TextShape,
+  ) => {
+    ctx.font = `${shape.fontSize}px ${shape.fontFamily}`;
+
+    const lines = shape.text.split("\n");
+
+    const width = Math.max(...lines.map((line) => ctx.measureText(line).width));
+
+    const height = lines.length * shape.fontSize * 2;
+
+    ctx.strokeStyle = "#3b82f6";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+
+    ctx.strokeRect(shape.x - 4, shape.y - 4, width + 8, height + 8);
+
+    ctx.setLineDash([]);
   };
 
   const drawShape = (
@@ -368,6 +390,10 @@ export default function Canvas() {
     shapes.forEach((shape) => {
       const isSelected = shape.id === selectedShapeId;
       drawShape(ctx, shape, isSelected ? "#3b82f6" : "#1e293b");
+
+      if (isSelected && shape.type === "Text") {
+        drawTextSelection(ctx, shape);
+      }
     });
 
     if (currentShape) {
