@@ -8,6 +8,13 @@ export type Tool =
 
 export type Shapes = Rectangle | Circle | Square;
 
+export type Bounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export interface Rectangle {
   id: string;
   x: number;

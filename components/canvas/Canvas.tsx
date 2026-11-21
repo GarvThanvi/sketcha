@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Shape, TextShape, Tool } from "../../types/canvas";
+import type { Shape, TextShape, Tool, Bounds } from "../../types/canvas";
 import Toolbar from "./Toolbar";
+
+const HANDLE_SIZE = 8;
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,6 +39,13 @@ export default function Canvas() {
     startX: number;
     startY: number;
     originalShape: Shape;
+  } | null>(null);
+
+  const resizeRef = useRef<{
+    startX: number;
+    startY: number;
+    originalShape: Shape;
+    handle: string;
   } | null>(null);
 
   useEffect(() => {
@@ -399,6 +408,67 @@ export default function Canvas() {
     if (currentShape) {
       drawShape(ctx, currentShape, "#3b82f6");
     }
+  };
+
+  //resize logic
+  const getShapeBounds = (shape: Shape): Bounds => {
+    if (shape.type === "Rectangle") {
+      return {
+        x: shape.x,
+        y: shape.y,
+        width: shape.height,
+        height: shape.width,
+      };
+    }
+
+    if (shape.type === "Square") {
+      return {
+        x: shape.x,
+        y: shape.y,
+        width: shape.side,
+        height: shape.side,
+      };
+    }
+
+    if (shape.type === "Circle") {
+      return {
+        x: shape.x - shape.radius,
+        y: shape.y - shape.radius,
+        width: shape.radius * 2,
+        height: shape.radius * 2,
+      };
+    }
+
+    if (shape.type === "Line") {
+      return {
+        x: Math.min(shape.x1, shape.x2),
+        y: Math.min(shape.y2, shape.y2),
+        width: Math.abs(shape.x2 - shape.x1),
+        height: Math.abs(shape.y2 - shape.y1),
+      };
+    }
+
+    return {
+      x: shape.x,
+      y: shape.y,
+      width: 0,
+      height: 0,
+    };
+  };
+
+  const getHandles = (bounds: Bounds) => {
+    const { x, y, width, height } = bounds;
+
+    return {
+      nw: { x, y },
+      n: { x: x + width / 2, y },
+      ne: { x: x + width, y },
+      e: { x: x + width, y: y + height / 2 },
+      se: { x: x + width, y: y + height },
+      s: { x: x + width / 2, y: y + height },
+      sw: { x, y: y + height },
+      w: { x, y: y + height / 2 },
+    };
   };
 
   useEffect(() => {
