@@ -471,6 +471,27 @@ export default function Canvas() {
     };
   };
 
+  const getHandleAtPosition = (
+    x: number,
+    y: number,
+    shape: Shape,
+  ): string | null => {
+    if (shape.type === "Line" || shape.type == "Text") return null;
+
+    const bounds = getShapeBounds(shape);
+    const handles = getHandles(bounds);
+
+    for (const [name, position] of Object.entries(handles)) {
+      if (
+        Math.abs(x - position.x) <= HANDLE_SIZE &&
+        Math.abs(y - position.y) <= HANDLE_SIZE
+      ) {
+        return name;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
