@@ -77,6 +77,29 @@ export default function Canvas() {
     const { x, y } = getMousePosition(e);
 
     if (tool === "selection") {
+      if (selectedShapeId) {
+        const selectedShape = shapes.find(
+          (shape) => shape.id === selectedShapeId,
+        );
+
+        if (selectedShape) {
+          const handle = getHandleAtPosition(x, y, selectedShape);
+
+          if (handle) {
+            resizeRef.current = {
+              startX: x,
+              startY: y,
+              originalShape: selectedShape,
+              handle,
+            };
+
+            setAction("moving");
+            setActiveHandle(handle);
+            return;
+          }
+        }
+      }
+
       const selected = getShapeAtPosition(x, y);
 
       if (!selected) {
@@ -92,6 +115,9 @@ export default function Canvas() {
         startY: y,
         originalShape: selected,
       };
+
+      setAction("moving");
+      return;
     }
 
     if (tool == "Text") {
@@ -107,6 +133,23 @@ export default function Canvas() {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { x, y } = getMousePosition(e);
+
+    if (resizeRef.current) {
+      const { startX, startY, originalShape, handle } = resizeRef.current;
+
+      const dx = x - startX;
+      const dy = y - startY;
+
+      setShapes((prev) =>
+        prev.map((shape) =>
+          shape.id === originalShape.id
+            ? resizeShape(originalShape, handle, dx, dy)
+            : shape,
+        ),
+      );
+
+      return;
+    }
 
     if (tool === "selection" && dragRef.current) {
       const { startX, startY, originalShape } = dragRef.current;
@@ -205,12 +248,18 @@ export default function Canvas() {
     setIsDrawing(false);
     setIsTyping(false);
     setCurrentShape(null);
+    dragRef.current = null;
+    resizeRef.current = null;
+    setAction(null);
+    setActiveHandle(null);
   };
 
   const handleMouseUp = () => {
     if (tool === "selection") {
       dragRef.current = null;
-
+      resizeRef.current = null;
+      setActiveHandle(null);
+      setAction(null);
       return;
     }
 
@@ -400,8 +449,11 @@ export default function Canvas() {
       const isSelected = shape.id === selectedShapeId;
       drawShape(ctx, shape, isSelected ? "#3b82f6" : "#1e293b");
 
-      if (isSelected && shape.type === "Text") {
-        drawTextSelection(ctx, shape);
+      if (isSelected) {
+        drawResizeHandles(ctx, shape);
+        if (shape.type === "Text") {
+          drawTextSelection(ctx, shape);
+        }
       }
     });
 
@@ -416,8 +468,8 @@ export default function Canvas() {
       return {
         x: shape.x,
         y: shape.y,
-        width: shape.height,
-        height: shape.width,
+        width: shape.width,
+        height: shape.height,
       };
     }
 
@@ -490,6 +542,91 @@ export default function Canvas() {
       }
     }
     return null;
+  };
+
+  const resizeShape = (
+    shape: Shape,
+    handle: string,
+    dx: number,
+    dy: number,
+  ): Shape => {
+    const bounds = getShapeBounds(shape);
+
+    let { x, y, width, height } = bounds;
+
+    if (handle.includes("w")) {
+      width -= dx;
+      x += dx;
+    }
+
+    if (handle.includes("e")) {
+      width += dx;
+    }
+
+    if (handle.includes("n")) {
+      y += dy;
+      height -= dy;
+    }
+
+    if (handle.includes("s")) {
+      height += dy;
+    }
+
+    width = Math.max(10, width);
+    height = Math.max(10, height);
+
+    if (shape.type === "Rectangle") {
+      return { ...shape, x, y, width, height };
+    }
+
+    if (shape.type === "Square") {
+      const side = Math.max(height, width);
+
+      return {
+        ...shape,
+        x: handle.includes("w") ? bounds.x + bounds.width - side : x,
+        y: handle.includes("n") ? bounds.y + bounds.height - side : y,
+        side,
+      };
+    }
+
+    if (shape.type === "Circle") {
+      const diameter = Math.max(width, height);
+
+      const radius = diameter / 2;
+
+      return {
+        ...shape,
+        x: handle.includes("w") ? bounds.x + bounds.width : bounds.x,
+        y: handle.includes("n") ? bounds.y + bounds.height : bounds.y,
+        radius,
+      };
+    }
+
+    return shape;
+  };
+
+  const drawResizeHandles = (ctx: CanvasRenderingContext2D, shape: Shape) => {
+    if (shape.type === "Line" || shape.type === "Text") return;
+
+    const bounds = getShapeBounds(shape);
+    const handles = getHandles(bounds);
+    console.log(handles);
+    ctx.fillStyle = "#fffff";
+    ctx.strokeStyle = "#3b82f6";
+    ctx.lineWidth = 1.5;
+
+    Object.values(handles).forEach(({ x, y }) => {
+      ctx.beginPath();
+      ctx.rect(
+        x - HANDLE_SIZE / 2,
+        y - HANDLE_SIZE / 2,
+        HANDLE_SIZE,
+        HANDLE_SIZE,
+      );
+      ctx.fill();
+      ctx.stroke();
+    });
   };
 
   useEffect(() => {
