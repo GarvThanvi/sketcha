@@ -148,6 +148,7 @@ export default function Canvas() {
         ),
       );
 
+      e.currentTarget.style.cursor = getResizeCursor(handle);
       return;
     }
 
@@ -165,8 +166,33 @@ export default function Canvas() {
         ),
       );
 
+      e.currentTarget.style.cursor = "move";
       return;
     }
+
+    if (tool === "selection") {
+      if (selectedShapeId) {
+        const selectedShape = shapes.find(
+          (shape) => shape.id === selectedShapeId,
+        );
+
+        if (selectedShape) {
+          const handle = getHandleAtPosition(x, y, selectedShape);
+
+          if (handle) {
+            e.currentTarget.style.cursor = getResizeCursor(handle);
+            return;
+          }
+        }
+      }
+
+      const hoveredShape = getShapeAtPosition(x, y);
+
+      e.currentTarget.style.cursor = hoveredShape ? "move" : "default";
+      return;
+    }
+
+    e.currentTarget.style.cursor = "crosshair";
 
     if (!isDrawing) return;
 
@@ -627,6 +653,29 @@ export default function Canvas() {
       ctx.fill();
       ctx.stroke();
     });
+  };
+
+  const getResizeCursor = (handle: string): string => {
+    switch (handle) {
+      case "nw":
+      case "se":
+        return "nwse-resize";
+
+      case "ne":
+      case "sw":
+        return "nesw-resize";
+
+      case "n":
+      case "s":
+        return "ns-resize";
+
+      case "e":
+      case "w":
+        return "ew-resize";
+
+      default:
+        return "crosshair";
+    }
   };
 
   useEffect(() => {
