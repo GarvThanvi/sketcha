@@ -520,7 +520,7 @@ export default function Canvas() {
     if (shape.type === "Line") {
       return {
         x: Math.min(shape.x1, shape.x2),
-        y: Math.min(shape.y2, shape.y2),
+        y: Math.min(shape.y1, shape.y2),
         width: Math.abs(shape.x2 - shape.x1),
         height: Math.abs(shape.y2 - shape.y1),
       };
@@ -554,7 +554,16 @@ export default function Canvas() {
     y: number,
     shape: Shape,
   ): string | null => {
-    if (shape.type === "Line" || shape.type == "Text") return null;
+    if (shape.type == "Text") return null;
+
+    if (shape.type === "Line") {
+      const startDist = Math.hypot(x - shape.x1, y - shape.y1);
+      const endDist = Math.hypot(x - shape.x2, y - shape.y2);
+
+      if (startDist <= HANDLE_SIZE) return "start";
+      if (endDist <= HANDLE_SIZE) return "end";
+      return null;
+    }
 
     const bounds = getShapeBounds(shape);
     const handles = getHandles(bounds);
@@ -601,6 +610,15 @@ export default function Canvas() {
     width = Math.max(10, width);
     height = Math.max(10, height);
 
+    if (shape.type === "Line") {
+      if (handle === "start") {
+        return { ...shape, x1: shape.x1 + dx, y1: shape.y1 + dy };
+      }
+      if (handle === "end") {
+        return { ...shape, x2: shape.x2 + dx, y2: shape.y2 + dy };
+      }
+    }
+
     if (shape.type === "Rectangle") {
       return { ...shape, x, y, width, height };
     }
@@ -633,16 +651,25 @@ export default function Canvas() {
   };
 
   const drawResizeHandles = (ctx: CanvasRenderingContext2D, shape: Shape) => {
-    if (shape.type === "Line" || shape.type === "Text") return;
+    if (shape.type === "Text") return;
 
-    const bounds = getShapeBounds(shape);
-    const handles = getHandles(bounds);
-    console.log(handles);
+    let handles: { x: number; y: number }[];
+
     ctx.fillStyle = "#fffff";
     ctx.strokeStyle = "#3b82f6";
     ctx.lineWidth = 1.5;
 
-    Object.values(handles).forEach(({ x, y }) => {
+    if (shape.type === "Line") {
+      handles = [
+        { x: shape.x1, y: shape.y1 },
+        { x: shape.x2, y: shape.y2 },
+      ];
+    } else {
+      const bounds = getShapeBounds(shape);
+      handles = Object.values(getHandles(bounds));
+    }
+
+    handles.forEach(({ x, y }) => {
       ctx.beginPath();
       ctx.rect(
         x - HANDLE_SIZE / 2,
@@ -672,6 +699,10 @@ export default function Canvas() {
       case "e":
       case "w":
         return "ew-resize";
+
+      case "start":
+      case "end":
+        return "crosshair";
 
       default:
         return "crosshair";
