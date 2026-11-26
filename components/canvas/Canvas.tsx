@@ -721,6 +721,33 @@ export default function Canvas() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "r":
+        case "R":
+          setTool("Rectangle");
+          break;
+
+        case "t":
+        case "T":
+          setTool("Text");
+          break;
+
+        case "l":
+        case "L":
+          setTool("Line");
+          break;
+
+        case "c":
+        case "C":
+          setTool("Circle");
+          break;
+
+        case "s":
+        case "S":
+          setTool("Square");
+          break;
+      }
+
       if (!selectedShapeId) return;
 
       if (isTyping) return;
