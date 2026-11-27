@@ -623,27 +623,40 @@ export default function Canvas() {
       return { ...shape, x, y, width, height };
     }
 
-    if (shape.type === "Square") {
-      const side = Math.max(height, width);
+    if (shape.type === "Square" || shape.type === "Circle") {
+      const horizontal = handle.includes("e") || handle.includes("w");
+      const vertical = handle.includes("n") || handle.includes("s");
+
+      // Side length follows the axis being dragged; corners use the larger one.
+      const side =
+        horizontal && vertical
+          ? Math.max(width, height)
+          : horizontal
+            ? width
+            : height;
+
+      // Keep the opposite edge fixed; on an edge handle, keep the other axis centered.
+      const left = handle.includes("w")
+        ? bounds.x + bounds.width - side
+        : handle.includes("e")
+          ? bounds.x
+          : bounds.x + (bounds.width - side) / 2;
+
+      const top = handle.includes("n")
+        ? bounds.y + bounds.height - side
+        : handle.includes("s")
+          ? bounds.y
+          : bounds.y + (bounds.height - side) / 2;
+
+      if (shape.type === "Square") {
+        return { ...shape, x: left, y: top, side };
+      }
 
       return {
         ...shape,
-        x: handle.includes("w") ? bounds.x + bounds.width - side : x,
-        y: handle.includes("n") ? bounds.y + bounds.height - side : y,
-        side,
-      };
-    }
-
-    if (shape.type === "Circle") {
-      const diameter = Math.max(width, height);
-
-      const radius = diameter / 2;
-
-      return {
-        ...shape,
-        x: handle.includes("w") ? bounds.x + bounds.width : bounds.x,
-        y: handle.includes("n") ? bounds.y + bounds.height : bounds.y,
-        radius,
+        x: left + side / 2,
+        y: top + side / 2,
+        radius: side / 2,
       };
     }
 
